@@ -1,0 +1,144 @@
+# -----------------------------------------------------------------------------
+# This code was modfied from Carrington et al. (2020) by Eudriano Costa.
+#
+# This Null codes compare each diversity metrics after trait simulation 
+# between local and coastal fishing for habitat use function
+#
+# -----------------------------------------------------------------------------
+
+# Load Habt.Lmat.spp and other necessary data
+Habt.Lmat.spp <- CoastLoc_All.Lmat.spp  # matrix containing the species landings, standardized to a range 0-1 scale
+CoastLoc_All.Traits_df  # Binary trait matrix
+Habt.Trait <- CoastLoc_All.Trait  # Store traits data for coastal habitats
+
+# Divide the data into different blocks based on habitat types
+Habt.BSh <- CoastLoc_All.Traits_df[, 5:9]  # Block for BSh habitat
+Habt.PWC <- CoastLoc_All.Traits_df[, 10:16]  # Block for PWC habitat
+Habt.FC <- CoastLoc_All.Traits_df[, 46:49]  # Block for FC habitat
+Habt.MTP <- CoastLoc_All.Traits_df[, 55:59]  # Block for MTP habitat
+Habt.MD <- CoastLoc_All.Traits_df[, 50:54]  # Block for MD habitat
+Habt.Diet <- CoastLoc_All.Traits_df[, 69:76]  # Block for dietary traits
+
+# Prepare binary-coded data for ktab analysis
+Habt.w.BSh <- prep.binary(Habt.BSh, col.blocks = 5, label = "BSh")  # Binary-coded data for BSh habitat
+Habt.w.PWC <- prep.binary(Habt.PWC, col.blocks = 7, label = "PWC")  # Binary-coded data for PWC habitat
+Habt.w.FC <- prep.binary(Habt.FC, col.blocks = 4, label = "FC")  # Binary-coded data for FC habitat
+Habt.w.MTP <- prep.binary(Habt.MTP, col.blocks = 5, label = "MTP")  # Binary-coded data for MTP habitat
+Habt.w.MD <- prep.binary(Habt.MD, col.blocks = 5, label = "MD")  # Binary-coded data for MD habitat
+Habt.w.Diet <- prep.fuzzy(CoastLoc_All.Traits_df[, 69:76], col.blocks = 8, label = "Diet")  # Fuzzy-coded data for dietary traits
+
+# Perform functional indices using dbFD package
+Habt.ktab.comb <- ktab.list.df(list(Habt.w.BSh, Habt.w.PWC, Habt.w.FC, Habt.w.MTP, Habt.w.MD, Habt.w.Diet))  # Combine data for analysis
+Habt.ktab.dist <- dist.ktab(Habt.ktab.comb, type = c("B", "B", "B", "B", "B", "F"))  # Compute distance matrix for ktab analysis
+
+# Conduct functional diversity analysis
+Habt.FD_results <- dbFD(Habt.ktab.dist, Habt.Lmat.spp, m = "min", stand.FRic = TRUE, calc.FGR = FALSE, w.abun = TRUE, print.pco = TRUE)  # Compute functional diversity metrics
+Habt.FD_results  # Display results
+
+# Store data for randomization
+CoastLoc_All.Traits_df -> Habt.Coast_Local.traits_random  # Store original traits data for randomization
+
+# Create empty vectors to store the simulated values
+Habt.FRic_distr.Coast_Local <- c()  # Vector to store simulated FRic values
+Habt.FEve_distr.Coast_Local <- c()  # Vector to store simulated FEve values
+Habt.FDiv_distr.Coast_Local <- c()  # Vector to store simulated FDiv values
+Habt.FDis_distr.Coast_Local <- c()  # Vector to store simulated FDis values
+
+# Randomization Loop
+for (i in 1:999) {
+  # Randomize data
+  sample(rownames(Habt.Trait)) -> rownames(Habt.Coast_Local.traits_random)  # Randomize row names
+  Habt.Coast_Local.traits_random <- Habt.Coast_Local.traits_random[order(rownames(Habt.Coast_Local.traits_random)), ]  # Sort randomized data
+  Habt.Lmatrix_random.Coast_Local <- Habt.Lmat.spp[, order(colnames(Habt.Lmat.spp))]  # Randomize species matrix
+  
+  # Divide randomized data into blocks
+  Habt.BSh.rand.Coast_Local <- Habt.Coast_Local.traits_random[, 1:5]
+  Habt.PWC.rand.Coast_Local <- Habt.Coast_Local.traits_random[, 6:12]
+  Habt.FC.rand.Coast_Local <- Habt.Coast_Local.traits_random[, 13:16]
+  Habt.MTP.rand.Coast_Local <- Habt.Coast_Local.traits_random[, 17:22]
+  Habt.MD.rand.Coast_Local <- Habt.Coast_Local.traits_random[, 23:27]
+  Habt.Diet.rand.Coast_Local <- Habt.Coast_Local.traits_random[, 28:35]
+  
+  # Prepare binary-coded data for randomized data
+  Habt.w.BSh.rand.Coast_Local <- prep.binary(Habt.BSh.rand.Coast_Local, col.blocks = 5, label = "BSh")
+  Habt.w.PWC.rand.Coast_Local <- prep.binary(Habt.PWC.rand.Coast_Local, col.blocks = 7, label = "PWC")
+  Habt.w.FC.rand.Coast_Local <- prep.binary(Habt.FC.rand.Coast_Local, col.blocks = 4, label = "FC")
+  Habt.w.MTP.rand.Coast_Local <- prep.binary(Habt.MTP.rand.Coast_Local, col.blocks = 6, label = "MTP")
+  Habt.w.MD.rand.Coast_Local <- prep.binary(Habt.MD.rand.Coast_Local, col.blocks = 5, label = "MD")
+  Habt.w.Diet.rand.Coast_Local <- prep.fuzzy(Habt.Diet.rand.Coast_Local, col.blocks = 8, label = "Diet")
+  
+  # Perform functional diversity analysis for randomized data
+  Habt.ktab.comb.rand <- ktab.list.df(list(Habt.w.BSh.rand.Coast_Local, Habt.w.PWC.rand.Coast_Local, Habt.w.FC.rand.Coast_Local, Habt.w.MTP.rand.Coast_Local, Habt.w.MD.rand.Coast_Local, Habt.w.Diet.rand.Coast_Local))
+  Habt.ktab.dist.rand <- dist.ktab(Habt.ktab.comb.rand, type = c("B", "B", "B", "B", "B", "F"))
+  Habt.FD.Coast_Local_random <- dbFD(Habt.ktab.dist.rand, Habt.Lmatrix_random.Coast_Local, m = "min", stand.FRic = TRUE, calc.FGR = FALSE, w.abun = TRUE, print.pco = TRUE)
+  
+  # Store simulated values
+  unname(Habt.FD.Coast_Local_random$FRic[1]) - unname(Habt.FD.Coast_Local_random$FRic[2]) -> Habt.FRic_distr.Coast_Local[i] 
+  unname(Habt.FD.Coast_Local_random$FEve[1]) - unname(Habt.FD.Coast_Local_random$FEve[2]) -> Habt.FEve_distr.Coast_Local[i] 
+  unname(Habt.FD.Coast_Local_random$FDiv[1]) - unname(Habt.FD.Coast_Local_random$FDiv[2]) -> Habt.FDiv_distr.Coast_Local[i] 
+  unname(Habt.FD.Coast_Local_random$FDis[1]) - unname(Habt.FD.Coast_Local_random$FDis[2]) -> Habt.FDis_distr.Coast_Local[i] 
+  
+  # Print loop counter
+  print(i)
+}
+
+# Get differences between observed values (Coastal-Local)
+unname(Habt.FD_results$FRic[1]) - unname(Habt.FD_results$FRic[2]) -> Habt.FRic_obs.Coast_Local
+unname(Habt.FD_results$FEve[1]) - unname(Habt.FD_results$FEve[2]) -> Habt.FEve_obs.Coast_Local
+unname(Habt.FD_results$FDiv[1]) - unname(Habt.FD_results$FDiv[2]) -> Habt.FDiv_obs.Coast_Local
+unname(Habt.FD_results$FDis[1]) - unname(Habt.FD_results$FDis[2]) -> Habt.FDis_obs.Coast_Local
+
+# Add the observed values to the simulated distribution
+Habt.FRic_distr.Coast_Local <- c(Habt.FRic_distr.Coast_Local, Habt.FRic_obs.Coast_Local)
+Habt.FEve_distr.Coast_Local <- c(Habt.FEve_distr.Coast_Local, Habt.FEve_obs.Coast_Local)
+Habt.FDiv_distr.Coast_Local <- c(Habt.FDiv_distr.Coast_Local, Habt.FDiv_obs.Coast_Local)
+Habt.FDis_distr.Coast_Local <- c(Habt.FDis_distr.Coast_Local, Habt.FDis_obs.Coast_Local)
+
+# Calculate p-values for each metric
+# FRic p-value
+Habt.abs.FRic_distr.Coast_Local <- abs(Habt.FRic_distr.Coast_Local)
+Habt.abs.FRic_obs.Coast_Local <- abs(Habt.FRic_obs.Coast_Local)
+Habt.exceed_count.FRic.Coast_Local <- length(Habt.abs.FRic_distr.Coast_Local[Habt.abs.FRic_distr.Coast_Local >= Habt.abs.FRic_obs.Coast_Local])
+Habt.FRic_p_val.Coast_Local <- (Habt.exceed_count.FRic.Coast_Local / 999)
+
+# FEve p-value
+Habt.abs.FEve_distr.Coast_Local <- abs(Habt.FEve_distr.Coast_Local)
+Habt.abs.FEve_obs.Coast_Local <- abs(Habt.FEve_obs.Coast_Local)
+Habt.exceed_count.FEve.Coast_Local <- length(Habt.abs.FEve_distr.Coast_Local[Habt.abs.FEve_distr.Coast_Local >= Habt.abs.FEve_obs.Coast_Local])
+Habt.FEve_p_val.Coast_Local <- (Habt.exceed_count.FEve.Coast_Local / 999)
+
+# FDiv p-value
+Habt.abs.FDiv_distr.Coast_Local <- abs(Habt.FDiv_distr.Coast_Local)
+Habt.abs.FDiv_obs.Coast_Local <- abs(Habt.FDiv_obs.Coast_Local)
+Habt.exceed_count.FDiv.Coast_Local <- length(Habt.abs.FDiv_distr.Coast_Local[Habt.abs.FDiv_distr.Coast_Local >= Habt.abs.FDiv_obs.Coast_Local])
+Habt.FDiv_p_val.Coast_Local <- (Habt.exceed_count.FDiv.Coast_Local / 999)
+
+# FDis p-value
+Habt.abs.FDis_distr.Coast_Local <- abs(Habt.FDis_distr.Coast_Local)
+Habt.abs.FDis_obs.Coast_Local <- abs(Habt.FDis_obs.Coast_Local)
+Habt.exceed_count.FDis.Coast_Local <- length(Habt.abs.FDis_distr.Coast_Local[Habt.abs.FDis_distr.Coast_Local >= Habt.abs.FDis_obs.Coast_Local])
+Habt.FDis_p_val.Coast_Local <- (Habt.exceed_count.FDis.Coast_Local / 999)
+
+# Plot histograms with observed values and p-values for each metric
+# Habt_FRic plot_Coast_Local
+Habt_FRic_Coast_Local <- ggplot() +
+  ylab("Count") + xlab("Absolute Simulated FRic difference") +
+  geom_histogram(aes(x = Habt.abs.FRic_distr.Coast_Local), bins = 50, fill = "grey", alpha = 0.4, colour = "black") +
+  geom_vline(xintercept = Habt.abs.FRic_obs.Coast_Local, size = 1, linetype = "longdash", colour = "red", show.legend = TRUE) +
+  geom_label_repel(aes(x = Habt.abs.FRic_obs.Coast_Local, y = Inf, label = paste("Obs diff=", round(Habt.abs.FRic_obs.Coast_Local, 4)), fontface = "bold"), min.segment.length = 5) +
+  geom_label(aes(x = Habt.abs.FRic_obs.Coast_Local, y = Inf, label = paste("p=", round(Habt.FRic_p_val.Coast_Local, 4)), fontface = "bold"), vjust = 3) +
+  theme_bw()
+Habt_FRic_Coast_Local
+
+# Similar plots for FEve, FDiv, and FDis metrics...
+
+# Visualize and Save multiplots
+Habt_multiplot_Coast_Local <- grid.arrange(
+  Habt_FRic_Coast_Local,
+  Habt_FEve_Coast_Local,
+  Habt_FDiv_Coast_Local,
+  Habt_FDis_Coast_Local,
+  ncol = 2)
+
+#---End
+#-------------------------------------------------------------------------------
