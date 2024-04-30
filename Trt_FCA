@@ -1,0 +1,176 @@
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#  
+#          ---- Fuzzy Correspondence Analysis ---
+#
+#  By Eudriano Costa
+#  February 14, 2024.
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+# The code below performes the FCA analysis for habitat use.
+
+
+#----< Libraries
+# Load necessary libraries for analysis and visualization
+library(ggplot2)    # For creating visualizations
+library(FactoMineR) # For performing Factorial Correspondence Analysis
+library(ggrepel)    # For label repelling in plots
+library(gghighlight)    # For highlighting in plots
+library(ade4)       # For additional multivariate analysis
+
+#--- HABTAT USE dataframe
+#  Habt_Trait contains the habitat use data with traits as columns and speces as rows
+
+#
+#----< Perform FCA
+#
+
+# Define the number of levels (blocks) for the FCA
+Habt_blocks1 <- c(BSh = 5, PWC = 7, FC = 4,  MTP = 5,  MD = 5,  Diet = 8)
+
+# Prepare fuzzy variables for FCA
+Habt_Fuzzy <- prep.fuzzy.var(Habt_Trait , Habt_blocks1)
+
+# Perform FCA
+Habt.fca_result <- dudi.fca(Habt_Fuzzy, scann = FALSE, nf = 4)
+
+# Summarize FCA results
+summary(Habt.fca_result)
+
+# Compute inertia
+inertia.dudi(Habt.fca_result, scann = FALSE)
+
+# Compute correlations between rows and axes
+Loco.row_axis_correlations <- cor(Habt.fca_result$li, Habt_Trait)
+
+# Print FCA result
+Habt.fca_result
+Habt.fca_result$c1
+
+#----< Extract Habt.coordinates from the FCA result
+Habt.coordinates <- as.data.frame(Habt.fca_result$li)
+
+#----< Create a new variable indicating the block for each label
+# Extract block information from row names and assign to Habt.vectors
+Habt.vectors$Habt.blocks <- sub("(BSh|PWC|FC|MTP|MD|Diet).*", "\\1", row.names(Habt.vectors))
+Habt.vectors
+
+# FCA PLOTS: Axes 1 and 2
+#------------------------> HABITAT USE
+
+# Select species for land use
+MostLand_species <- c("skj", "bet", "jaa", "sbr", "alb", "coe", "vma", "brf", "for", "sck",
+                      "wrf", "sfs", "swo", "bys", "prr") 
+
+# Filter coordinates for selected species
+Habt.Land_species <- Habt.coordinates[rownames(Habt.coordinates) %in% MostLand_species, ]
+
+# Calculate convex hull for habitat use coordinates
+Habt.convex_hull <- Habt.coordinates %>%
+  slice(chull(Axis1, Axis2))
+
+#-----> Habt - Plot1
+# Create the first plot displaying habitat use
+Habt.Plot2.noPointsAxes_1_2 <- ggplot(Habt.coordinates, aes(x = Axis1, y = Axis2)) +
+  geom_point(color = "gray30", size = 1.5) + ##003366
+  geom_point(data=Habt.Land_species, 
+             aes(x= Axis1, y=Axis2), 
+             color='red',
+             size=1.5) +
+  scale_x_continuous(limits = c(-2.5, 2), breaks = seq(-2.5, 2, 1)) +
+  scale_y_continuous(limits = c(-2.5, 2.5), breaks = seq(-2.5, 2.5, 1)) +
+  geom_text_repel(
+    aes(label = ifelse(rownames(Habt.coordinates) %in% MostLand_species, rownames(Habt.coordinates), ""),
+        color = factor(rownames(Habt.coordinates) %in% MostLand_species)),
+    fontface = 'bold', color = "red",
+    box.padding = 0.2,
+    point.padding = 0.1,
+    segment.color = "black",
+    segment.size = 0.5,
+    segment.linetype = "solid",
+    segment.alpha = 0.7,
+    max.overlaps = Inf) + 
+  scale_color_manual(values = c("TRUE" = "black", "FALSE" = "red"), guide = "none") +  # Specify colors for highlighted and non-highlighted species
+  labs(title = "FCA Plot", x = "Axis 1(12.8%)", y = " ") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black", size = 0.5) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "black", size = 0.5) +
+  theme_bw() +
+  labs(title = " ", subtitle = "Habitat use", caption = " ") +
+  theme(panel.border = element_rect(colour = "black", fill = NA, linetype = 1, size = 0.8),
+        panel.background = element_rect(fill = NA),
+        panel.grid.major.x = element_line(colour = "white", size = 0.3, linetype = 3),
+        panel.grid.minor.x = element_line(colour = "white", size = 0.2, linetype = 3),
+        panel.grid.major.y = element_line(colour = "white", size = 0.3, linetype = 3),
+        panel.grid.minor.y = element_line(colour = "white", size = 0.2, linetype = 3),
+        text = element_text(size = 12),
+        axis.text.y = element_text(size = 13, hjust = 0.5),
+        axis.text.x = element_text(size = 13, hjust = 0.5),
+        plot.title = element_text(face = "bold", size= 14),
+        plot.subtitle = element_text(face = "bold", size= 13),
+        plot.caption = element_text(face = "bold", size= 13),
+        strip.text = element_text(size = 12),
+        plot.margin = unit(c(0, 0, 0, 0.5), "pt")) +
+  annotate(geom= "text", x=2, y= 2.5, label= "B", cex=5, hjust= 0,
+           color= "black", fontface= "bold") +
+  geom_polygon(
+    data = Habt.convex_hull,
+    aes(x = Axis1, y = Axis2),
+    fill = "gray", color = "black", 
+    alpha = 0.2, linetype = "dotted", size = 0.8) 
+
+#-----> Habt - Plot2
+# Create the second plot displaying vectors representing habitat use variables
+Habt.Plot3.noPointsAxes_1_2.p <- ggplot(Habt.coordinates, aes(x = Axis1, y = Axis2)) +
+  geom_point(alpha = 0.5, color=NA) +  
+  labs(title = "FCA Plot", x = "Axis 1(12.8%)", y = "Axis 2(8.6%)") +
+  scale_x_continuous(limits = c(-2.5, 2), breaks = seq(-2.5, 2, 1)) +
+  scale_y_continuous(limits = c(-2.5, 2.5), breaks = seq(-2.5, 2.5, 1))
+
+# Add Habt.vectors to the plot with color based on the Habt.blocks variable
+Habt.Plot3.noPointsAxes_1_2 <- Habt.Plot3.noPointsAxes_1_2.p +
+  geom_segment(data = Habt.vectors, aes(x = 0, y = 0, xend = Comp1, yend = Comp2, color = Habt.blocks),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"), size = 0.5) +
+  geom_label_repel(data = Habt.vectors, 
+                   aes(x = Comp1, y = Comp2, label = row.names(Habt.vectors),
+                       fill = Habt.blocks, colour = Habt.blocks),
+                   fontface = 'bold', color = "white",
+                   box.padding = 0.8, 
+                   point.padding = 0.1,
+                   segment.color = "gray30",
+                   segment.size = 0.2,
+                   segment.linetype = "dashed",
+                   segment.alpha = 0.7,
+                   max.overlaps = Inf) + 
+  scale_fill_manual(values = c("BSh" = "#ECB920","PWC" = "#674BB0", 
+                               "FC" = "#36295E","MTP" = "blue",
+                               "MD" = "#4FEF07","Diet" = "#B45F06")) +
+  
+  scale_colour_manual(values = c("BSh" = "#ECB920","PWC" = "#674BB0", 
+                                 "FC" = "#36295E","MTP" = "blue",
+                                 "MD" = "#4FEF07","Diet" = "#B45F06")) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black", size = 0.5) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "black", size = 0.5) +
+  theme_bw() +
+  labs(title = " ", subtitle = "Habitat use", caption = " ") +
+  theme(panel.border = element_rect(colour = "black", fill = NA, linetype = 1, size = 0.8),
+        panel.background = element_rect(fill = NA),
+        panel.grid.major.x = element_line(colour = "white", size = 0.3, linetype = 3),
+        panel.grid.minor.x = element_line(colour = "white", size = 0.2, linetype = 3),
+        panel.grid.major.y = element_line(colour = "white", size = 0.3, linetype = 3),
+        panel.grid.minor.y = element_line(colour = "white", size = 0.2, linetype = 3),
+        text = element_text(size = 12),
+        axis.text.y = element_text(size = 13, hjust = 0.5),
+        axis.text.x = element_text(size = 13, hjust = 0.5),
+        plot.title = element_text(face = "bold", size= 14),
+        plot.subtitle = element_text(face = "bold", size= 13),
+        plot.caption = element_text(face = "bold", size= 13),
+        strip.text = element_text(size = 12),
+        plot.margin = unit(c(0, 0, 0, 0.5), "pt")) +
+  annotate(geom= "text", x=2, y= 2.5, label= "A", cex=5, hjust= 0,
+           color= "black", fontface= "bold") 
+
+# Show the plots
+Habt.Plot2.noPointsAxes_1_2
+Habt.Plot3.noPointsAxes_1_2
+
+#END
+#---
