@@ -3,7 +3,8 @@
 
 The following R code was utilized in the article "Costa et al. (2024). Trait diversity in exploited fish of the Azorean islands: Insights from a multifunctional approach" The code involved performing null models and Fuzzy Correspondence Analysis (FCA) to investigate the trait diversity of fish landed by both local and coastal fishing fleets in the Azores archipelago over the past four decades.
 
-
+## FCA plot
+![image](https://github.com/Eudriano/Trait_diversity/assets/70699003/51eb4cae-2772-4515-a0f2-fa937fca9234)
 
 ## 🔗 Links
 [![Research Gate](https://upload.wikimedia.org/wikipedia/commons/5/5e/ResearchGate_icon_SVG.svg)](https://www.researchgate.net/profile/Eudriano-Costa)
