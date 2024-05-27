@@ -48,25 +48,5 @@ eudriano@yahoo.com
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Citation
-Costa, E., Menezes, G., Colaço, A. (2024). Trait-Based insights into sustainable fisheries: A Four-Decade Perspective in Azores Archipelago. Available at SSRN: https://ssrn.com/abstract=4661562. doi:  p://dx.doi.org/10.2139/ssrn.4661562
-
+Costa, E., Menezes, G., Colaço, A. (2024). Trait diversity in exploited fish of the Azorean islands: Insights from a multifunctional approach (Under review)
